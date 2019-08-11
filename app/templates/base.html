@@ -1,3 +1,4 @@
+<!doctype html>
 <html>
     <head>
         {% if title %}
@@ -5,12 +6,14 @@
         {% else %}
         <title>Welcome to AsyncTask</title>
         {% endif %}
+        <link rel="stylesheet" href="static/hf.css" />
     </head>
     <body>
         <div>
             AsyncTask:
             <a href="{{ url_for('add') }}">Добавить</a>
             <a href="{{ url_for('search') }}">Найти</a>
+            <a href="{{ url_for('view_all') }}">Отобразить все</a>
             <a href="{{ url_for('remove') }}">Удалить</a>
         </div>
         <hr>

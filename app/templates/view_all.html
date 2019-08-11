@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Текущие задачи</h1>
+    {%for task in tasks%}
+    <p>{{task}}</p>
+    {% endfor %}
+{% endblock %}

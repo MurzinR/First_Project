@@ -1,7 +1,4 @@
-from app import app, db
-from app.models import Task
+from app import app
 
-
-@app.shell_context_processor
-def make_shell_context():
-    return {'db': db, 'Task': Task}
+if __name__ == '__main__':
+    app.run()
