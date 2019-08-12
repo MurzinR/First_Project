@@ -9,8 +9,8 @@ from app.models import Task
 
 
 def json_to_str(json_taskname):
-    """Преобразует json в str,
-    ожидаются входные данные вида {"name": "имя_функции"}"""
+    """Выделяет из json {"name": "имя_функции"} имя функции,
+     если taskname не соответствует формату json или виду {"name": "имя_функции"} возвращает пустую строку"""
     try:
         taskname = str(json.loads(json_taskname)['name'])
         return taskname
@@ -18,40 +18,42 @@ def json_to_str(json_taskname):
         return ''
 
 
-@app.route('/add/<json_taskname>')
+@app.route('/tasks/<json_taskname>', methods=['POST'])
 def json_add(json_taskname: json) -> json:
     """Добавляет задачу в базу данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
     taskname = json_to_str(json_taskname)
-    if taskname and Task.query.filter_by(name=taskname).first() is None:
+    if not taskname:
+        return json.dumps({'status': 'error', 'description': 'incorrect_input'})
+    if Task.query.filter_by(name=taskname).first() is None:
         task = Task(name=taskname, status='created')
         db.session.add(task)
         db.session.commit()
         app.task_queue.enqueue('app.task.do', taskname)
         return json.dumps({'status': 'ok'})
-    return json.dumps({'status': 'error'})
+    return json.dumps({'status': 'error', 'description': 'task_already_exists'})
 
 
-@app.route('/search/<json_taskname>')
+@app.route('/tasks/<json_taskname>', methods=['GET'])
 def json_search(json_taskname: json) -> json:
     """Ищет и выдает информацию о задаче в базе данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
     taskname = json_to_str(json_taskname)
     if not taskname:
-        return json.dumps({'status': 'error', 'task': None, 'task_status': None})
+        return json.dumps({'status': 'error', 'description': 'incorrect_input'})
     task = Task.query.filter_by(name=taskname).first()
     if not task:
         return json.dumps({'status': 'not_found', 'task': None, 'task_status': None})
     return json.dumps({'status': 'ok', 'task': task.name, 'task_status': task.status})
 
 
-@app.route('/remove/<json_taskname>')
+@app.route('/tasks/<json_taskname>', methods=['DELETE'])
 def json_remove(json_taskname: json) -> json:
     """Удаляет задачу из базы данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
     taskname = json_to_str(json_taskname)
     if not taskname:
-        return json.dumps({'status': 'error'})
+        return json.dumps({'status': 'error', 'description': 'incorrect_input'})
     task = Task.query.filter_by(name=taskname)
     if not task.first():
         return json.dumps({'status': 'not_found'})
