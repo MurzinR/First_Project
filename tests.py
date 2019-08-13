@@ -16,7 +16,7 @@ class TestClass:
     def test_add_task_incorrect_input_2(self) -> None:
         """Проверяет json_add() с некорректными входными данными"""
         assert requests.post('http://127.0.0.1:5000/tasks/2').text == '{"status": "error", "description": ' \
-                                                                      '"incorrect_input"}'
+                                                                      '"incorrect json"}'
 
     def test_search_task(self) -> None:
         """Проверяет json_search() (необходимо запустить rq worker asynctasks-tasks)"""
@@ -32,7 +32,7 @@ class TestClass:
                                                                                 'null, "task_status": null}'
         requests.delete('http://127.0.0.1:5000/tasks/{"name":"2"}')
         assert requests.get('http://127.0.0.1:5000/tasks/1').text == '{"status": "error", "description": ' \
-                                                                     '"incorrect_input"}'
+                                                                     '"incorrect json"}'
 
     def test_remove_task(self) -> None:
         """Проверяет json_remove()"""
@@ -41,7 +41,7 @@ class TestClass:
         assert requests.delete('http://127.0.0.1:5000/tasks/{"name":"4"}').text == '{"status": "ok"}'
         assert requests.delete('http://127.0.0.1:5000/tasks/{"name":"4"}').text == '{"status": "not_found"}'
         assert requests.delete('http://127.0.0.1:5000/tasks/1').text == '{"status": "error", "description": ' \
-                                                                        '"incorrect_input"}'
+                                                                        '"incorrect json"}'
         requests.delete('http://127.0.0.1:5000/tasks/{"name":"4"}')
         requests.delete('http://127.0.0.1:5000/tasks/{"name":"1"}')
 

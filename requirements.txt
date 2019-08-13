@@ -20,10 +20,6 @@ descartes==1.1.0
 dominate==2.4.0
 entrypoints==0.3
 Flask==1.1.1
-Flask-Babel==0.12.2
-Flask-Bootstrap==3.3.7.1
-Flask-Login==0.4.1
-Flask-Mail==0.9.1
 Flask-Migrate==2.5.2
 Flask-Moment==0.9.0
 Flask-SQLAlchemy==2.4.0
