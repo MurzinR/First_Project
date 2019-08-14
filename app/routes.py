@@ -1,13 +1,13 @@
 import uuid
 
 import rq
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, flash, redirect, url_for, request, abort
 from redis import Redis
 import json
 
 from app import app, db
 from app.forms import TaskForm
-from app.models import Task
+from app.models import Task, Status
 
 
 def loads_task(json_taskname: json) -> dict:
@@ -34,51 +34,48 @@ def check_input(pars_json_taskname: dict) -> dict:
     return {'status': 'error', 'description': 'input data isn\'t json'}
 
 
-@app.route('/tasks/<json_taskname>', methods=['POST'])
-def json_add(json_taskname: json) -> json:
+@app.route('/tasks', methods=['POST'])
+def json_add() -> json:
     """Добавляет задачу в базу данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
-    pars_json_taskname = loads_task(json_taskname)
+    pars_json_taskname = loads_task(request.json)
     input_details = check_input(pars_json_taskname)
     if input_details['status'] == 'error':
         return json.dumps(input_details)
     taskname = str(pars_json_taskname['result']['name'])
     if Task.query.filter_by(name=taskname).first() is None:
-        task = Task(id=str(uuid.uuid4()), name=taskname, status='created')
+        task_id = uuid.uuid4()
+        task = Task(id=task_id, name=taskname, status=Status.created)
         db.session.add(task)
         db.session.commit()
-        app.task_queue.enqueue('app.task.do', taskname)
-        return json.dumps({'status': 'ok'})
+        queue = rq.Queue('asynctasks-tasks', connection=Redis.from_url('redis://'))
+        queue.enqueue('app.task.do', taskname)
+        return json.dumps({'status': 'ok', 'id': str(task_id)})  # т.е. все равно приходится конвертировать
     return json.dumps({'status': 'error', 'description': 'task_already_exists'})
 
 
-@app.route('/tasks/<json_taskname>', methods=['GET'])
-def json_search(json_taskname: json) -> json:
+@app.route('/tasks/<task_id>', methods=['GET'])  # можно засунуть json_search и json_remove в одну функцию json_task?
+def json_search(task_id: json) -> json:
     """Ищет и выдает информацию о задаче в базе данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
-    pars_json_taskname = loads_task(json_taskname)
-    input_details = check_input(pars_json_taskname)
-    if input_details['status'] == 'error':
-        return json.dumps(input_details)
-    taskname = str(pars_json_taskname['result']['name'])
-    task = Task.query.filter_by(name=taskname).first()
-    if not task:
-        return json.dumps({'status': 'not_found', 'task': None, 'task_status': None})
-    return json.dumps({'status': 'ok', 'task': task.name, 'task_status': task.status})
+    try:
+        current_id = uuid.UUID(task_id)
+    except ValueError:
+        abort(404) # или лучше status:error
+    task = Task.query.filter_by(id=current_id).first_or_404()
+    return json.dumps({'status': 'ok', 'task': task.name, 'task_status': {"__enum__": str(task.status)}})
 
 
-@app.route('/tasks/<json_taskname>', methods=['DELETE'])
-def json_remove(json_taskname: json) -> json:
+@app.route('/tasks/<task_id>', methods=['DELETE'])
+def json_remove(task_id: json) -> json:
     """Удаляет задачу из базы данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
-    pars_json_taskname = loads_task(json_taskname)
-    input_details = check_input(pars_json_taskname)
-    if input_details['status'] == 'error':
-        return json.dumps(input_details)
-    taskname = str(pars_json_taskname['result']['name'])
-    task = Task.query.filter_by(name=taskname)
-    if not task.first():
-        return json.dumps({'status': 'not_found'})
+    try:
+        current_id = uuid.UUID(task_id)
+    except ValueError:
+        abort(404)
+    task = Task.query.filter_by(id=current_id)
+    task.first_or_404()
     task.delete()
     db.session.commit()
     return json.dumps({'status': 'ok'})
@@ -91,9 +88,8 @@ def add() -> 'html':
     form = TaskForm()
     if form.validate_on_submit():
         if Task.query.filter_by(name=form.task.data).first() is None:
-            task = Task(id=str(uuid.uuid4()), name=form.task.data,
-                        status='created')  # имеет ли смысл проверять, уникален ли uuid.uuid4()?
-            db.session.add(task)  # операции с бд стоит выполнять в отдельном потоке?
+            task = Task(id=uuid.uuid4(), name=form.task.data, status=Status.created)
+            db.session.add(task)
             db.session.commit()
             flash(f'Добавлена задача {form.task.data}')
             queue = rq.Queue('asynctasks-tasks', connection=Redis.from_url('redis://'))
