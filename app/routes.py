@@ -63,7 +63,7 @@ def json_search(task_id: json) -> json:
     except ValueError:
         abort(404) # или лучше status:error
     task = Task.query.filter_by(id=current_id).first_or_404()
-    return json.dumps({'status': 'ok', 'task': task.name, 'task_status': {"__enum__": str(task.status)}})
+    return json.dumps({'status': 'ok', 'data': {'id': str(current_id), 'name': task.name, 'status': task.status.name}})
 
 
 @app.route('/tasks/<task_id>', methods=['DELETE'])

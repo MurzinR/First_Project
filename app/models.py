@@ -5,9 +5,9 @@ from app import db
 
 
 class Status(enum.Enum):
-    created = 0
-    in_progress = 1
-    done = 2
+    created = 'created'
+    in_progress = 'in_progress'
+    done = 'done'
 
 
 class Task(db.Model):
@@ -17,4 +17,4 @@ class Task(db.Model):
     status = db.Column(db.Enum(Status))
 
     def __repr__(self):
-        return f'{self.name} - {self.status}'
+        return f'{self.name} - {self.status.name}'

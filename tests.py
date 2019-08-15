@@ -22,12 +22,14 @@ class TestClass:
         task_id = json.loads(requests.post('http://127.0.0.1:5000/tasks', json=json.dumps({"name": "2"})).text)['id']
         time.sleep(3)
         assert json.loads(requests.get('http://127.0.0.1:5000/tasks/' + task_id).text) == {"status": "ok",
-                                                                                           "task": "2",
-                                                                                           "task_status":  {'__enum__': 'Status.in_progress'}}
+                                                                                           'data': {'id': task_id,
+                                                                                                    'name': '2',
+                                                                                                    'status': 'in_progress'}}
         time.sleep(10)
         assert json.loads(requests.get('http://127.0.0.1:5000/tasks/' + task_id).text) == {"status": "ok",
-                                                                                           "task": "2",
-                                                                                           "task_status":  {'__enum__': 'Status.done'}}
+                                                                                           'data': {'id': task_id,
+                                                                                                    'name': '2',
+                                                                                                    'status': 'done'}}
         assert requests.get('http://127.0.0.1:5000/tasks/1').status_code == 404
 
     def test_remove_task(self) -> None:
@@ -45,14 +47,17 @@ class TestClass:
         task7_id = json.loads(requests.post('http://127.0.0.1:5000/tasks', json=json.dumps({"name": "7"})).text)['id']
         time.sleep(20)
         assert json.loads(requests.get('http://127.0.0.1:5000/tasks/' + task5_id).text) == {"status": "ok",
-                                                                                            "task": "5",
-                                                                                            "task_status":  {'__enum__': 'Status.done'}}
+                                                                                            'data': {'id': task5_id,
+                                                                                                     'name': '5',
+                                                                                                     'status': 'done'}}
         assert json.loads(requests.get('http://127.0.0.1:5000/tasks/' + task6_id).text) == {"status": "ok",
-                                                                                            "task": "6",
-                                                                                            "task_status":  {'__enum__': 'Status.done'}}
+                                                                                            'data': {'id': task6_id,
+                                                                                                     'name': '6',
+                                                                                                     'status': 'done'}}
         assert json.loads(requests.get('http://127.0.0.1:5000/tasks/' + task7_id).text) == {"status": "ok",
-                                                                                            "task": "7",
-                                                                                            "task_status":  {'__enum__': 'Status.done'}}
+                                                                                            'data': {'id': task7_id,
+                                                                                                     'name': '7',
+                                                                                                     'status': 'done'}}
         requests.delete('http://127.0.0.1:5000/tasks/' + task5_id)
         requests.delete('http://127.0.0.1:5000/tasks/' + task6_id)
         requests.delete('http://127.0.0.1:5000/tasks/' + task7_id)
