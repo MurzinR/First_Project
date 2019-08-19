@@ -3,13 +3,10 @@ from logging.config import dictConfig
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 config = {'SECRET_KEY': os.environ.get('SECRET_KEY') or 'you-will-never-guess',
-          'SQLALCHEMY_DATABASE_URI': os.environ.get('DATABASE_URL'),
+          'SQLALCHEMY_DATABASE_URI': os.environ.get('DATABASE_URL', 'postgres+psycopg2://postgres:mysecretpassword@127.0.0.1:5434/mytestdb'),
           'SQLALCHEMY_TRACK_MODIFICATIONS': False,
           'REDIS_URL': os.environ.get('REDIS_URL') or 'redis://'}
-
-if not os.path.exists('logs'):
-    os.mkdir('logs')
-dictConfig({
+log_config = {
     "version": 1,
     "formatters": {
         "simple": {
@@ -17,6 +14,12 @@ dictConfig({
         }
     },
     "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "simple",
+            "stream": "ext://sys.stdout"
+        },
         "file": {
             "class": "logging.FileHandler",
             "level": "INFO",
@@ -26,6 +29,6 @@ dictConfig({
     },
     "root": {
         "level": "INFO",
-        "handlers": ["file"]
+        "handlers": ["console", "file"]
     }
-})
+}
