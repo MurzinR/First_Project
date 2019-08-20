@@ -1,6 +1,5 @@
 import uuid
-
-from flask import render_template, flash, redirect, url_for, request, abort
+from flask import render_template, flash, redirect, url_for, request
 import json
 
 from app import app, db
@@ -48,28 +47,20 @@ def json_add() -> json:
     return json.dumps({'status': 'error', 'description': 'task_already_exists'}), 404
 
 
-@app.route('/tasks/<task_id>',  # добавить проверку на uuid
+@app.route('/tasks/<uuid:task_id>',
            methods=['GET'])
-def json_search(task_id: json) -> json:
+def json_search(task_id: uuid) -> json:
     """Ищет и выдает информацию о задаче в базе данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
-    try:
-        current_id = uuid.UUID(task_id)
-    except ValueError:
-        abort(404)  # или лучше status:error
-    task = Task.query.filter_by(id=current_id).first_or_404()
-    return json.dumps({'status': 'ok', 'data': {'id': str(current_id), 'name': task.name, 'status': task.status.name}})
+    task = Task.query.filter_by(id=task_id).first_or_404()
+    return json.dumps({'status': 'ok', 'data': {'id': str(task_id), 'name': task.name, 'status': task.status.name}})
 
 
-@app.route('/tasks/<task_id>', methods=['DELETE'])
+@app.route('/tasks/<uuid:task_id>', methods=['DELETE'])
 def json_remove(task_id: json) -> json:
     """Удаляет задачу из базы данных,
     ожидаются входные данные вида {"name": "имя_функции"}"""
-    try:
-        current_id = uuid.UUID(task_id)
-    except ValueError:
-        abort(404)
-    task = Task.query.filter_by(id=current_id)
+    task = Task.query.filter_by(id=task_id)
     task.first_or_404()
     task.delete()
     db.session.commit()
