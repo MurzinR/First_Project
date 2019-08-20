@@ -6,17 +6,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from rq import Queue
 
-from config import config, log_config
+from config import APP_CONFIG, LOG_CONFIG
 from redis import Redis
 
 app = Flask(__name__)
-app.config.update(config)
+app.config.update(APP_CONFIG)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 app.task_queue = Queue('asynctasks-tasks', connection=Redis.from_url(app.config['REDIS_URL']))
 
 if not os.path.exists('logs'):
     os.mkdir('logs')
-dictConfig(log_config)
+dictConfig(LOG_CONFIG)
 
 from app import models, routes, errors

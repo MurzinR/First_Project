@@ -1,5 +1,4 @@
 import enum
-
 from sqlalchemy import inspect
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -12,14 +11,16 @@ class Status(enum.Enum):
     done = 'done'
 
 
-class AuxiliaryClassForModels:
-    """Вспомогательный класс для моделей"""
+class BaseModel(db.Model):
+    """Абстрактный класс моделей"""
+    __abstract__ = True
+
     def to_dict(self):
-        return {c.key:  str(getattr(self, c.key))
+        return {c.key: getattr(self, c.key)
                 for c in inspect(self).mapper.column_attrs}
 
 
-class Task(AuxiliaryClassForModels, db.Model):
+class Task(BaseModel):
     """Сущность Задача(id, name, status)"""
     id = db.Column(UUID(as_uuid=True), primary_key=True)
     name = db.Column(db.String(64), index=True, unique=True)
