@@ -1,72 +1,8 @@
 version: '3'
 
 services:
-  my-postgres:
-    image: postgres
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=mysecretpassword
-      - POSTGRES_DB=mytestdb
-    ports:
-      - "5434:5432"
-
-  asynctasks_redis:
-    image: redis:4.0.6-alpine
-    ports:
-      - "6380:6379"
-    volumes:
-      - ./redis:/data
-    depends_on:
-      - my-postgres
-
-  async-tasks_db-migrate:
-    image: r1murzin/async-tasks:latest
-    environment:
-      - DATABASE_URL=postgres+psycopg2://postgres:mysecretpassword@my-postgres:5432/mytestdb
-    ports:
-      - "5001:5001"    
-    depends_on:
-      - asynctasks_redis
-      - my-postgres
-    command: bash -c "./wait-for-it.sh my-postgres:5432 -- flask db upgrade"
-
-  async-tasks:
-    image: r1murzin/async-tasks:latest
-    environment:
-      - DATABASE_URL=postgres+psycopg2://postgres:mysecretpassword@my-postgres:5432/mytestdb
-      - REDIS_URL=redis://asynctasks_redis:6379
-    ports:
-      - "5000:5000"
-    depends_on:
-      - asynctasks_redis
-      - my-postgres
-    command: bash -c "./wait-for-it.sh async-tasks_db-migrate:5001 -- python main.py"
-
-  async-tasks_worker1:
-    image: r1murzin/async-tasks:latest
-    command: bash -c "./wait-for-it.sh async-tasks_db-migrate:5001 -- rq worker --url redis://asynctasks_redis:6379 asynctasks-tasks"
-    environment:
-      - DATABASE_URL=postgres+psycopg2://postgres:mysecretpassword@my-postgres:5432/mytestdb
-    depends_on:
-      - asynctasks_redis
-      - my-postgres
-  async-tasks_worker2:
-    image: r1murzin/async-tasks:latest
-    environment:
-      - DATABASE_URL=postgres+psycopg2://postgres:mysecretpassword@my-postgres:5432/mytestdb
-    command: bash -c "./wait-for-it.sh async-tasks_db-migrate:5001 -- rq worker --url redis://asynctasks_redis:6379 asynctasks-tasks"
-    depends_on:
-      - asynctasks_redis
-      - my-postgres
-  async-tasks_worker3:
-    image: r1murzin/async-tasks:latest
-    environment:
-      - DATABASE_URL=postgres+psycopg2://postgres:mysecretpassword@my-postgres:5432/mytestdb
-    command: bash -c "./wait-for-it.sh async-tasks_db-migrate:5001 -- rq worker --url redis://asynctasks_redis:6379 asynctasks-tasks"
-    depends_on:
-      - asynctasks_redis
   async-tasks_test:
     image: r1murzin/async-tasks:latest
     environment:
       - HOST_URL=http://async-tasks:5000
-    command: bash -c "pip install pytest && ./wait-for-it.sh async-tasks:5000 -- sleep 10 && pytest tests.py"
+    command: bash -c "pip install pytest && ./wait-for-it.sh async-tasks:5000 -- pytest tests.py"
