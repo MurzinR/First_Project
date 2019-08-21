@@ -1,13 +1,11 @@
 import uuid
-from enum import Enum
-from functools import wraps
-
 from flask import render_template, flash, redirect, url_for, request
 import json
 
 from app import app, db
 from app.forms import TaskForm
 from app.models import Task, Status
+from app.output import correct_output
 
 
 def loads_json(data: json) -> dict:
@@ -27,31 +25,6 @@ def check_input(pars_taskname: dict) -> str:
     if len(str(pars_taskname['name'])) == 0:
         return 'incorrect name'
     return None
-
-
-def correct_output(func):
-    """Приводит выходные данные к ожидаемому формату"""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        def data_to_str(origin_data):
-            """Преобразует у словаря значения в строку"""
-            data = origin_data
-            if isinstance(data, dict):
-                for key, value in data.items():
-                    if isinstance(value, Enum):
-                        value = value.name
-                    data[key] = str(value)
-            return data
-        input_data = func(*args, **kwargs)
-        size_input_data = len(input_data)
-        if size_input_data == 1 or input_data[1] < 400:
-            return json.dumps({'ok': True,
-                               'data': data_to_str(input_data[0]),
-                               'message': input_data[2] if size_input_data == 3 else None}), input_data[1] if size_input_data > 1 else 200
-        return json.dumps({'ok': False,
-                           'issues': data_to_str(input_data[0]),
-                           'message': input_data[2] if size_input_data == 3 else None}), input_data[1] if size_input_data > 1 else 404
-    return wrapper
 
 
 @app.route('/tasks', methods=['POST'])
